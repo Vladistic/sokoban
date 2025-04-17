@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/23.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="de.vladistic.sokoban.StarterController"
+            prefWidth="1024.0" prefHeight="640.0">
+
+    <top>
+        <MenuBar BorderPane.alignment="CENTER">
+            <menus>
+                <Menu text="File">
+                    <items>
+                        <MenuItem fx:id="menuClose" text="Close" />
+                    </items>
+                </Menu>
+                <Menu text="Edit">
+                    <items>
+                        <MenuItem fx:id="menuDelete" text="Delete" />
+                    </items>
+                </Menu>
+                <Menu text="Help">
+                    <items>
+                        <MenuItem fx:id="menuAbout" text="About" />
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+    </top>
+
+    <center>
+        <Canvas fx:id="canvas"
+                width="1024.0" height="640.0"
+                BorderPane.alignment="CENTER" />
+    </center>
+
+    <bottom>
+        <HBox fx:id="statusBar"
+              styleClass="status-bar"
+              prefHeight="23.0" prefWidth="600.0"
+              BorderPane.alignment="CENTER">
+            <children>
+                <Label fx:id="statusLabel1" text="L1"
+                       HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets top="5" right="5" bottom="5" left="5"/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="statusLabel2" text="L2"
+                       alignment="CENTER" HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets top="5" right="5" bottom="5" left="5"/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="statusLabel3" text="L3"
+                       alignment="BASELINE_RIGHT"
+                       HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets top="5" right="5" bottom="5" left="5"/>
+                    </HBox.margin>
+                </Label>
+            </children>
+        </HBox>
+    </bottom>
+
+</BorderPane>
