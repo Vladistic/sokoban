@@ -3,6 +3,7 @@
 - [x] CSS eingefügt
 - [x] Controller erstellt
 - [x] Vereinfachter Entry
-- [ ] Smooth Movement
+- [x] Smooth Movement
 - [ ] Status Leiste verbessern
 - [ ] weitere Menuitems hinzufügen
+- [x] Startmenü mit Levelwahl, Options(WIP), Exit

@@ -13,9 +13,9 @@ public class Starter extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass()
-                .getResource("starter.fxml")));
-        Scene scene = new Scene(root, 1280, 768);
-        stage.setTitle("Sokoban");
+                .getResource("startmenu.fxml")));
+        Scene scene = new Scene(root, 1280, 720);
+        stage.setTitle("Sokoban - Start Menu");
         stage.setScene(scene);
         stage.show();
     }

@@ -1,5 +1,7 @@
 package de.vladistic.sokoban;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -8,11 +10,13 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.image.Image;
+import javafx.util.Duration;
 
 public class StarterController {
     private static final int COLS = 16;
     private static final int ROWS = 10;
     private static final int TILE = Field.TILE; // 64
+    private boolean isAnimating = false;
 
     private Field[][] grid = new Field[ROWS][COLS];
     private Player player;
@@ -71,18 +75,6 @@ public class StarterController {
         }
     }
 
-    private void tryMove(int dRow, int dCol, Image dirImage) {
-        int nr = player.getRow() + dRow;
-        int nc = player.getCol() + dCol;
-        if (grid[nr][nc] instanceof Ground) {
-            player.setDirection(dirImage);
-            player.move(dRow, dCol);
-            drawAll();
-            statusLabel3.setText("Pos: (" + player.getRow()
-                    + "," + player.getCol() + ")");
-        }
-    }
-
     private void drawAll() {
         // Felder zeichnen
         for (int r = 0; r < ROWS; r++) {
@@ -92,5 +84,49 @@ public class StarterController {
         }
         // Spieler darüber
         player.draw(gc);
+    }
+
+    private void tryMove(int dRow, int dCol, Image dirImage) {
+        if (isAnimating) return;
+
+        int nr = player.getRow() + dRow;
+        int nc = player.getCol() + dCol;
+        if (grid[nr][nc] instanceof Ground) {
+            player.setDirection(dirImage);
+            animateMove(dRow, dCol);
+        }
+    }
+
+    private void animateMove(int dRow, int dCol) {
+        isAnimating = true;
+
+        final int steps = 8;
+        final double stepDurationMs = 25; // 8 * 25ms = 200ms Gesamtzeit
+        final double startX = player.getCol() * TILE;
+        final double startY = player.getRow() * TILE;
+        final double deltaX = dCol * TILE / steps;
+        final double deltaY = dRow * TILE / steps;
+
+        Timeline timeline = new Timeline();
+
+        for (int i = 1; i <= steps; i++) {
+            final int step = i;
+            KeyFrame kf = new KeyFrame(Duration.millis(step * stepDurationMs), e -> {
+                double newX = startX + deltaX * step;
+                double newY = startY + deltaY * step;
+                player.setPixelPosition(newX, newY);
+                drawAll();
+
+                if (step == steps) {
+                    // Animation fertig: Tile-Position aktualisieren
+                    player.setPosition(player.getRow() + dRow, player.getCol() + dCol);
+                    isAnimating = false;
+                    statusLabel3.setText("Pos: (" + player.getRow() + "," + player.getCol() + ")");
+                }
+            });
+            timeline.getKeyFrames().add(kf);
+        }
+
+        timeline.play();
     }
 }
