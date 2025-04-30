@@ -1,5 +1,6 @@
 package de.vladistic.sokoban;
 
+import de.vladistic.sokoban.utils.ParseLevels;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -8,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.IOException;
 
 public class StartMenuController {
@@ -21,11 +23,22 @@ public class StartMenuController {
 
     private int currentLevel = 1;
     private final int minLevel = 1;
-    private final int maxLevel = 10;
+    private int maxLevel = 1;
+    private String[] levels;
 
     @FXML
     public void initialize() {
-        updateLevelLabel();
+        try {
+            // Load levels from file
+            File levelsFile = new File(getClass().getResource("projekt/levels.txt").getFile());
+            levels = ParseLevels.parseLevels(levelsFile);
+            maxLevel = levels.length;
+            
+            updateLevelLabel();
+        } catch (Exception e) {
+            e.printStackTrace();
+            maxLevel = 1;
+        }
 
         btnLevelUp.setOnAction(e -> {
             if (currentLevel < maxLevel) {
@@ -48,32 +61,37 @@ public class StartMenuController {
         btnExit.setOnAction(e -> System.exit(0));
     }
 
+    /**
+     * Updates the level label.
+     */
     private void updateLevelLabel() {
-        lblLevel.setText("Level: " + currentLevel);
+        lblLevel.setText("Level: " + currentLevel + " / " + maxLevel);
     }
 
+    /**
+     * Starts the game.
+     */ 
     private void startGame() {
-        // Platzhalter: Level starten
-        System.out.println("Starte Level " + currentLevel);
-
-        // Hier werde ich später je nach Level unterschiedliche FXMLs oder Logik laden
-        // Beispiel: Für Level 1 das echte Spiel laden, für andere nur print
-
-        if (currentLevel == 1) {
-            try {
-                Parent root = FXMLLoader.load(getClass().getResource("starter.fxml"));
-                Stage stage = (Stage) btnNewGame.getScene().getWindow();
-                Scene scene = new Scene(root, 1280, 768);
-                stage.setTitle("Sokoban - Level " + currentLevel);
-                stage.setScene(scene);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        } else {
-            System.out.println("Level " + currentLevel + " ist noch nicht implementiert.");
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("starter.fxml"));
+            Parent root = loader.load();
+            LevelController controller = loader.getController();
+            
+            // Pass the current level data to the controller
+            controller.setLevelData(levels[currentLevel - 1]);
+            
+            Stage stage = (Stage) btnNewGame.getScene().getWindow();
+            Scene scene = new Scene(root, 1280, 768);
+            stage.setTitle("Sokoban - Level " + currentLevel);
+            stage.setScene(scene);
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 
+    /**
+     * Shows the options menu.
+     */
     private void showOptions() {
         System.out.println("Options clicked");
     }

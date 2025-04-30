@@ -10,7 +10,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/17.0.6"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="de.vladistic.sokoban.StarterController"
+            fx:controller="de.vladistic.sokoban.LevelController"
             prefWidth="1024.0" prefHeight="640.0">
 
     <top>
@@ -47,21 +47,14 @@
               prefHeight="23.0" prefWidth="600.0"
               BorderPane.alignment="CENTER">
             <children>
-                <Label fx:id="statusLabel1" text="L1"
+                <Label fx:id="versionLabel" text="Sokoban v0.3"
                        HBox.hgrow="ALWAYS">
                     <HBox.margin>
                         <Insets top="5" right="5" bottom="5" left="5"/>
                     </HBox.margin>
                 </Label>
-                <Label fx:id="statusLabel2" text="L2"
+                <Label fx:id="timerLabel" text="00:00"
                        alignment="CENTER" HBox.hgrow="ALWAYS">
-                    <HBox.margin>
-                        <Insets top="5" right="5" bottom="5" left="5"/>
-                    </HBox.margin>
-                </Label>
-                <Label fx:id="statusLabel3" text="L3"
-                       alignment="BASELINE_RIGHT"
-                       HBox.hgrow="ALWAYS">
                     <HBox.margin>
                         <Insets top="5" right="5" bottom="5" left="5"/>
                     </HBox.margin>

@@ -1,0 +1,42 @@
++++
+10 16
+5 8
+wwwwwwwwwwwwwwww
+wggggggggggggggw
+wggwwwggggggggww
+wggggggggggggggw
+wggggggggggggggw
+wggwwwggggggggww
+wggggggggggggggw
+wggggggggggggggw
+wggwwwggggggggww
+wwwwwwwwwwwwwwww
+---
++++
+10 16
+3 3
+wwwwwwwwwwwwwwww
+wggggwwggggggggw
+wggggggggggggggw
+wggggwwggggggggw
+wwwwwwwggggggggw
+wggggggggggggggw
+wggggwwggggggggw
+wggggggggggggggw
+wggggwwggggggggw
+wwwwwwwwwwwwwwww
+---
++++
+10 16
+7 12
+wwwwwwwwwwwwwwww
+wggggggwwggggggw
+wggggggwwggggggw
+wggggggggggggggw
+wggggggwwggggggw
+wggggggwwggggggw
+wggggggggggggggw
+wggggggwwggggggw
+wggggggwwggggggw
+wwwwwwwwwwwwwwww
+---
