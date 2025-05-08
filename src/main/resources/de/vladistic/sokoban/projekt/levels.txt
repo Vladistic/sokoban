@@ -1,42 +1,28 @@
 +++
-10 16
-5 8
+16x10
+1,7
 wwwwwwwwwwwwwwww
-wggggggggggggggw
-wggwwwggggggggww
-wggggggggggggggw
-wggggggggggggggw
-wggwwwggggggggww
-wggggggggggggggw
-wggggggggggggggw
-wggwwwggggggggww
-wwwwwwwwwwwwwwww
----
-+++
-10 16
-3 3
-wwwwwwwwwwwwwwww
-wggggwwggggggggw
-wggggggggggggggw
-wggggwwggggggggw
-wwwwwwwggggggggw
-wggggggggggggggw
-wggggwwggggggggw
-wggggggggggggggw
-wggggwwggggggggw
+wwwwwwwgwwwwwwww
+www*wwwgwwwwwwww
+wwwgwwwgwwwwwwww
+wwwgwwwgwwwwwwww
+wwwgwwwgwwwwwwww
+wwwgwwwgggggwwww
+wwwgwwwwwwwgwwww
+wwwgggggggggwwww
 wwwwwwwwwwwwwwww
 ---
 +++
-10 16
-7 12
+16x10
+1,7
 wwwwwwwwwwwwwwww
-wggggggwwggggggw
-wggggggwwggggggw
-wggggggggggggggw
-wggggggwwggggggw
-wggggggwwggggggw
-wggggggggggggggw
-wggggggwwggggggw
-wggggggwwggggggw
+wwwwwwwgwwgwwwww
+wwwwwwwgwwgggg*w
+wwwwgggcggcwwwww
+wwwwgwwgwwgwwwww
+wwwwggwwwggwwwww
+wwwwgggggggwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
 wwwwwwwwwwwwwwww
 ---

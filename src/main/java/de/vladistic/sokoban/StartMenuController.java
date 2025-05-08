@@ -91,6 +91,8 @@ public class StartMenuController {
 
     /**
      * Shows the options menu.
+     * Added for future use.
+     * 
      */
     private void showOptions() {
         System.out.println("Options clicked");

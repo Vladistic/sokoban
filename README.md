@@ -7,3 +7,7 @@
 - [ ] Status Leiste verbessern
 - [ ] weitere Menuitems hinzufügen
 - [x] Startmenü mit Levelwahl, Options(WIP), Exit
+- [ ] Level Editor
+- [x] Crates + Pushing
+- [x] Game Won Bildschirm
+- [x] Goal

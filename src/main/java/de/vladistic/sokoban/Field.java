@@ -18,6 +18,10 @@ abstract class Field {
 
     /**
      * Zeichnet das Feld an Pixelkoordinate (x,y).
+     * @param gc Das GraphicsContext, auf dem das Feld gezeichnet werden soll.
+     * @param x Die x-Koordinate des Feldes.
+     * @param y Die y-Koordinate des Feldes.
+     * @throws IllegalArgumentException Wenn die Koordinaten nicht gültig sind.
      */
     public void draw(GraphicsContext gc, int x, int y) {
         gc.drawImage(image, x, y);

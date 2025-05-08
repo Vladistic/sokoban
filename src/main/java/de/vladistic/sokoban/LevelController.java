@@ -3,6 +3,7 @@ package de.vladistic.sokoban;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Label;
@@ -10,7 +11,13 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.image.Image;
+import javafx.scene.text.Text;
 import javafx.util.Duration;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import java.io.IOException;
+import java.util.Objects;
 
 public class LevelController {
     private int COLS = 16;
@@ -40,15 +47,15 @@ public class LevelController {
         String[] lines = levelData.split("\n");
         
         // Parse dimensions (second line)
-        String[] dimensions = lines[1].trim().split(" ");
-        ROWS = Integer.parseInt(dimensions[0]);
-        COLS = Integer.parseInt(dimensions[1]);
-        
+        String[] dimensions = lines[1].trim().split("x");
+        ROWS = Integer.parseInt(dimensions[1]);
+        COLS = Integer.parseInt(dimensions[0]);
+
         // Parse player position (third line)
-        String[] playerPos = lines[2].trim().split(" ");
+        String[] playerPos = lines[2].trim().split(",");
         int playerRow = Integer.parseInt(playerPos[0]);
         int playerCol = Integer.parseInt(playerPos[1]);
-        
+
         // Initialize grid with correct dimensions
         grid = new Field[ROWS][COLS];
         
@@ -57,7 +64,12 @@ public class LevelController {
             String line = lines[r + 3];
             for (int c = 0; c < COLS; c++) {
                 char tile = line.charAt(c);
-                grid[r][c] = (tile == 'w') ? new Wall() : new Ground();
+                switch (tile) {
+                    case 'w' -> grid[r][c] = new Wall();
+                    case 'g' -> grid[r][c] = new Ground();
+                    case 'c' -> grid[r][c] = new Crate();
+                    case '*' -> grid[r][c] = new Goal();
+                }
             }
         }
         
@@ -156,10 +168,140 @@ public class LevelController {
 
         int nr = player.getRow() + dRow;
         int nc = player.getCol() + dCol;
-        if (grid[nr][nc] instanceof Ground) {
+        Field targetField = grid[nr][nc];
+
+        if (targetField instanceof Ground) {
             player.setDirection(dirImage);
             animateMove(dRow, dCol);
+        } else if (targetField instanceof Crate) {
+            // Check if we can move the crate
+            int crateNr = nr + dRow;
+            int crateNc = nc + dCol;
+            if (crateNr >= 0 && crateNr < ROWS && crateNc >= 0 && crateNc < COLS) {
+                Field behindCrate = grid[crateNr][crateNc];
+                if (behindCrate instanceof Ground || behindCrate instanceof Goal) {
+                    player.setDirection(dirImage);
+                    animateCrateMove(dRow, dCol, nr, nc, crateNr, crateNc);
+                }
+            }
+        } else if (targetField instanceof Goal) {
+            // Check if all crates are on goals
+            if (checkVictory()) {
+                showVictoryMessage();
+            } else {
+                player.setDirection(dirImage);
+                animateMove(dRow, dCol);
+            }
         }
+    }
+
+    /**
+     * Checks if the player has won the game.
+     * Added in case we want to add more complex victory conditions in the future.
+     * @return true if the player has won, false otherwise.
+     */
+    private boolean checkVictory() {
+        return true; 
+    }
+
+    /**
+     * Shows the victory message and starts a countdown to return to the main menu.
+     */
+    private void showVictoryMessage() {
+        isAnimating = true;
+        
+        // Clear the canvas
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        
+        // Draw victory message
+        gc.setFill(javafx.scene.paint.Color.BLACK);
+        gc.setFont(javafx.scene.text.Font.font(48));
+        String message = "You've won!";
+        Text text = new Text(message);
+        gc.fillText(message, 
+            (canvas.getWidth() - text.getLayoutBounds().getWidth()) / 3,
+            canvas.getHeight() / 2);
+        
+        // Draw timer
+        gc.setFont(javafx.scene.text.Font.font(24));
+        
+        // Create countdown timer
+        Timeline countdown = new Timeline();
+        int seconds = 10;
+        for (int i = 0; i < seconds; i++) {
+            String timerText = "Returning to menu in " + (seconds - i) + " seconds...";
+            Text timer = new Text(timerText);
+            KeyFrame kf = new KeyFrame(Duration.seconds(i), e -> {
+                gc.clearRect(0, canvas.getHeight() / 2, canvas.getWidth(), canvas.getHeight() / 2);
+                gc.fillText(timerText, 
+                    (canvas.getWidth() - timer.getLayoutBounds().getWidth()) / 3,
+                    canvas.getHeight() * 3/4);
+            });
+            countdown.getKeyFrames().add(kf);
+        }
+        
+        // Add final frame to return to menu
+        KeyFrame finalFrame = new KeyFrame(Duration.seconds(seconds), e -> {
+            returnToMainMenu();
+        });
+        countdown.getKeyFrames().add(finalFrame);
+        
+        countdown.play();
+    }
+
+    /**
+     * Returns to the main menu.
+     * Will probably be moved to its own controller in the future.
+     */
+    private void returnToMainMenu() {
+        try {
+            Parent root = FXMLLoader.load(Objects.requireNonNull(getClass()
+                    .getResource("startmenu.fxml")));
+            Scene scene = new Scene(root, canvas.getScene().getWidth(), canvas.getScene().getHeight());
+            Stage stage = (Stage) canvas.getScene().getWindow();
+            stage.setScene(scene);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Animates the crate's move.
+     * @param dRow The row to move the crate in.
+     * @param dCol The column to move the crate in.
+     * @param crateRow The row of the crate.
+     * @param crateCol The column of the crate.
+     * @param targetRow The row to move the crate to.
+     * @param targetCol The column to move the crate to.
+     */
+    private void animateCrateMove(int dRow, int dCol, int crateRow, int crateCol, int targetRow, int targetCol) {
+        isAnimating = true;
+
+        final int steps = 8;
+        final double stepDurationMs = 100;
+        
+        Timeline timeline = new Timeline();
+
+        // First move the crate
+        for (int i = 1; i <= steps; i++) {
+            final int step = i;
+            KeyFrame kf = new KeyFrame(Duration.millis(step * stepDurationMs), e -> {
+                
+                // Update the crate's position
+                grid[crateRow][crateCol] = new Ground();
+                grid[targetRow][targetCol] = new Crate();
+                
+                // Draw everything
+                drawAll();
+
+                if (step == steps) {
+                    // Now move the player
+                    animateMove(dRow, dCol);
+                }
+            });
+            timeline.getKeyFrames().add(kf);
+        }
+        timeline.play();
     }
 
     /**
