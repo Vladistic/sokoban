@@ -14,6 +14,44 @@ import java.io.IOException;
 
 public class StartMenuController {
 
+    /**
+     * Lädt das ReflectionLevel per Reflection und konvertiert es in einen Level-String,
+     * der von setLevelData wie gewohnt verarbeitet werden kann.
+     */
+    private String loadReflectionLevelString() {
+        try {
+            Class<?> clazz = Class.forName("de.vladistic.sokoban.reflection.ReflectionLevel");
+            Object reflectionLevel = clazz.getDeclaredConstructor().newInstance();
+
+            // Spielfeld-Zeilen sammeln
+            StringBuilder sb = new StringBuilder();
+            sb.append("+++\n"); // Startmarker wie im Dateiformat
+            int rows = 10; // wie in ReflectionLevel definiert
+            int cols = 16;
+            sb.append(cols + "x" + rows + "\n");
+
+            // Spielerposition
+            int playerRow = (int) clazz.getMethod("getPlayerPosX").invoke(reflectionLevel);
+            int playerCol = (int) clazz.getMethod("getPlayerPosY").invoke(reflectionLevel);
+            sb.append(playerRow + "," + playerCol + "\n");
+
+            // Zeilen des Spielfelds
+            for (int i = 0; i < rows; i++) {
+                String[] line = (String[]) clazz.getMethod("getLine", int.class).invoke(reflectionLevel, i);
+                for (String cell : line) {
+                    sb.append(cell);
+                }
+                sb.append("\n");
+            }
+            sb.append("---"); // Endmarker
+            return sb.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "+++\n16x10\n1,8\nwgwgwgwgwgwgwgwg\n---"; // Fallback
+        }
+    }
+
+
     @FXML private Button btnNewGame;
     @FXML private Button btnOptions;
     @FXML private Button btnExit;
@@ -31,9 +69,17 @@ public class StartMenuController {
         try {
             // Load levels from file
             File levelsFile = new File(getClass().getResource("projekt/levels.txt").getFile());
-            levels = ParseLevels.parseLevels(levelsFile);
+            String[] fileLevels = ParseLevels.parseLevels(levelsFile);
+
+            // Load ReflectionLevel via Reflection
+            String reflectionLevelString = loadReflectionLevelString();
+
+            // Combine file levels and reflection level
+            levels = new String[fileLevels.length + 1];
+            System.arraycopy(fileLevels, 0, levels, 0, fileLevels.length);
+            levels[fileLevels.length] = reflectionLevelString;
             maxLevel = levels.length;
-            
+
             updateLevelLabel();
         } catch (Exception e) {
             e.printStackTrace();

@@ -26,6 +26,10 @@ public class LevelController {
     private boolean isAnimating = false;
 
     private Field[][] grid;
+private boolean[][] isGoal; // Speichert, ob an dieser Position ein Ziel ist
+private Image crateOnTargetImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("projekt/crate_on_target.png")));
+private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getResourceAsStream("projekt/crate_target.png")));
+
     private Player player;
     private GraphicsContext gc;
     private Timeline timer;
@@ -56,9 +60,10 @@ public class LevelController {
         int playerRow = Integer.parseInt(playerPos[0]);
         int playerCol = Integer.parseInt(playerPos[1]);
 
-        // Initialize grid with correct dimensions
+        // Initialize grid and isGoal with correct dimensions
         grid = new Field[ROWS][COLS];
-        
+        isGoal = new boolean[ROWS][COLS];
+
         // Parse level layout (starting from fourth line)
         for (int r = 0; r < ROWS; r++) {
             String line = lines[r + 3];
@@ -68,7 +73,10 @@ public class LevelController {
                     case 'w' -> grid[r][c] = new Wall();
                     case 'g' -> grid[r][c] = new Ground();
                     case 'c' -> grid[r][c] = new Crate();
-                    case '*' -> grid[r][c] = new Goal();
+                    case '*' -> {
+                        grid[r][c] = new Goal();
+                        isGoal[r][c] = true;
+                    }
                 }
             }
         }
@@ -147,10 +155,20 @@ public class LevelController {
      * Draws all the fields and the player on the canvas.
      */
     private void drawAll() {
-        // Felder zeichnen
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
-                grid[r][c].draw(gc, c * TILE, r * TILE);
+                // Grundfeld
+                if (isGoal[r][c]) {
+                    gc.drawImage(crateTargetImg, c * TILE, r * TILE);
+                } else {
+                    grid[r][c].draw(gc, c * TILE, r * TILE);
+                }
+                // Kisten zeichnen
+                if (grid[r][c] instanceof GreenCrate) {
+                    gc.drawImage(crateOnTargetImg, c * TILE, r * TILE);
+                } else if (grid[r][c] instanceof Crate) {
+                    grid[r][c].draw(gc, c * TILE, r * TILE);
+                }
             }
         }
         // Spieler darüber
@@ -173,7 +191,7 @@ public class LevelController {
         if (targetField instanceof Ground) {
             player.setDirection(dirImage);
             animateMove(dRow, dCol);
-        } else if (targetField instanceof Crate) {
+        } else if (targetField instanceof Crate || targetField instanceof GreenCrate) {
             // Check if we can move the crate
             int crateNr = nr + dRow;
             int crateNc = nc + dCol;
@@ -201,7 +219,14 @@ public class LevelController {
      * @return true if the player has won, false otherwise.
      */
     private boolean checkVictory() {
-        return true; 
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if (isGoal[r][c] && !(grid[r][c] instanceof GreenCrate)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -282,21 +307,34 @@ public class LevelController {
         
         Timeline timeline = new Timeline();
 
-        // First move the crate
+        boolean crateWasGreen = grid[crateRow][crateCol] instanceof GreenCrate;
+        boolean targetIsGoal = isGoal[targetRow][targetCol];
+        boolean oldIsGoal = isGoal[crateRow][crateCol];
+
         for (int i = 1; i <= steps; i++) {
             final int step = i;
             KeyFrame kf = new KeyFrame(Duration.millis(step * stepDurationMs), e -> {
-                
-                // Update the crate's position
-                grid[crateRow][crateCol] = new Ground();
-                grid[targetRow][targetCol] = new Crate();
-                
-                // Draw everything
+                // Kiste am alten Platz entfernen
+                if (oldIsGoal) {
+                    grid[crateRow][crateCol] = new Goal();
+                } else {
+                    grid[crateRow][crateCol] = new Ground();
+                }
+                // Neue Kiste setzen
+                if (targetIsGoal) {
+                    grid[targetRow][targetCol] = new GreenCrate();
+                } else {
+                    grid[targetRow][targetCol] = new Crate();
+                }
+                // Zeichnen
                 drawAll();
 
                 if (step == steps) {
-                    // Now move the player
                     animateMove(dRow, dCol);
+                    // Nach dem Zug prüfen, ob gewonnen
+                    if (checkVictory()) {
+                        showVictoryMessage();
+                    }
                 }
             });
             timeline.getKeyFrames().add(kf);
