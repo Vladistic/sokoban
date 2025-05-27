@@ -53,7 +53,13 @@
                         <Insets top="5" right="5" bottom="5" left="5"/>
                     </HBox.margin>
                 </Label>
-                <Label fx:id="timerLabel" text="00:00"
+                <Label fx:id="moveCountLabel" text="Moves: 0"
+                       alignment="CENTER" HBox.hgrow="ALWAYS">
+                    <HBox.margin>
+                        <Insets top="5" right="5" bottom="5" left="5"/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="timerLabel" text="Time: 00:00"
                        alignment="CENTER" HBox.hgrow="ALWAYS">
                     <HBox.margin>
                         <Insets top="5" right="5" bottom="5" left="5"/>

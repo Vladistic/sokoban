@@ -32,7 +32,6 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
 
     private Player player;
     private GraphicsContext gc;
-    private Timeline timer;
     private int seconds = 0;
 
     @FXML private Canvas canvas;
@@ -42,6 +41,12 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
     @FXML private HBox statusBar;
     @FXML private Label versionLabel;
     @FXML private Label timerLabel;
+    @FXML private Label moveCountLabel;
+    
+    private volatile boolean running = true;
+    private int moveCount = 0;
+    private Thread timerThread;
+    private Timeline cooldownTimeline;
 
     /**
      * Sets the level data for the game.
@@ -95,13 +100,48 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
         drawAll();
     }
 
+    /**
+     * Starts or restarts the game timer.
+     */
+    public void startTimer() {
+        startTimerThread();
+    }
+    
+    /**
+     * Stops the game timer.
+     */
+    public void stopTimer() {
+        stopTimerThread();
+    }
+    
+    /**
+     * Resets the game timer and move counter.
+     */
+    public void resetTimer() {
+        seconds = 0;
+        moveCount = 0;
+        updateTimerLabel();
+        updateMoveCount();
+    }
+    
     @FXML
     public void initialize() {
         gc = canvas.getGraphicsContext2D();
+        
+        // Initialize move counter
+        updateMoveCount();
+        
+        // Start the timer thread
+        startTimerThread();
 
         // Key-Handling
         canvas.setFocusTraversable(true);
         canvas.setOnKeyPressed(evt -> {
+            if (isAnimating) {
+                evt.consume();
+                return;
+            }
+            
             KeyCode kc = evt.getCode();
             if (kc == KeyCode.LEFT) {
                 tryMove(0, -1, player.left);
@@ -112,6 +152,8 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
             } else if (kc == KeyCode.DOWN) {
                 tryMove(+1, 0, player.down);
             }
+            
+            evt.consume();
         });
 
         // Menu‑Actions
@@ -120,50 +162,83 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
         menuDelete.setOnAction(e -> stopTimer());
     }
 
-    private void startTimer() {
-        // Stop existing timer if any
-        if (timer != null) {
-            timer.stop();
-        }
+    private void startTimerThread() {
+        // Stop any existing timer thread
+        stopTimerThread();
         
-        // Reset seconds
+        // Reset seconds and update display
         seconds = 0;
         updateTimerLabel();
         
-        // Create new timer
-        timer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            seconds++;
-            updateTimerLabel();
-        }));
-        timer.setCycleCount(Timeline.INDEFINITE);
-        timer.play();
+        // Create and start new timer thread
+        running = true;
+        timerThread = new Thread(() -> {
+            while (running) {
+                try {
+                    Thread.sleep(1000);
+                    seconds++;
+                    javafx.application.Platform.runLater(this::updateTimerLabel);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+        timerThread.setDaemon(true);
+        timerThread.start();
     }
     
-    private void stopTimer() {
-        if (timer != null) {
-            timer.stop();
+    private void stopTimerThread() {
+        running = false;
+        if (timerThread != null) {
+            timerThread.interrupt();
+            timerThread = null;
         }
     }
     
     private void updateTimerLabel() {
-        int minutes = seconds / 60;
-        int remainingSeconds = seconds % 60;
-        timerLabel.setText(String.format("%02d:%02d", minutes, remainingSeconds));
+        if (timerLabel != null) {
+            int minutes = seconds / 60;
+            int remainingSeconds = seconds % 60;
+            timerLabel.setText(String.format("Time: %02d:%02d", minutes, remainingSeconds));
+        }
     }
+    
+    private void updateMoveCount() {
+        if (moveCountLabel != null) {
+            moveCountLabel.setText(String.format("Moves: %d", moveCount));
+        }
+    }
+    
+    private void incrementMoveCount() {
+        moveCount++;
+        updateMoveCount();
+    }
+
+    private boolean gameWon = false;
 
     /**
      * Draws all the fields and the player on the canvas.
      */
     private void drawAll() {
+        if (gameWon) {
+            return; // Don't redraw the game if we've won
+        }
+        
+        // Clear the entire canvas first to remove any previous frame
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        
+        // Draw all tiles
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
-                // Grundfeld
+                // Draw ground or goal tile first
                 if (isGoal[r][c]) {
                     gc.drawImage(crateTargetImg, c * TILE, r * TILE);
                 } else {
                     grid[r][c].draw(gc, c * TILE, r * TILE);
                 }
-                // Kisten zeichnen
+                
+                // Draw crates if present
                 if (grid[r][c] instanceof GreenCrate) {
                     gc.drawImage(crateOnTargetImg, c * TILE, r * TILE);
                 } else if (grid[r][c] instanceof Crate) {
@@ -171,7 +246,8 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
                 }
             }
         }
-        // Spieler darüber
+        
+        // Draw player on top of everything
         player.draw(gc);
     }
 
@@ -190,6 +266,7 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
 
         if (targetField instanceof Ground) {
             player.setDirection(dirImage);
+            incrementMoveCount();
             animateMove(dRow, dCol);
         } else if (targetField instanceof Crate || targetField instanceof GreenCrate) {
             // Check if we can move the crate
@@ -208,6 +285,7 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
                 showVictoryMessage();
             } else {
                 player.setDirection(dirImage);
+                incrementMoveCount();
                 animateMove(dRow, dCol);
             }
         }
@@ -233,9 +311,10 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
      * Shows the victory message and starts a countdown to return to the main menu.
      */
     private void showVictoryMessage() {
+        gameWon = true;
         isAnimating = true;
         
-        // Clear the canvas
+        // Clear the entire canvas
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
         
         // Draw victory message
@@ -301,37 +380,63 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
      */
     private void animateCrateMove(int dRow, int dCol, int crateRow, int crateCol, int targetRow, int targetCol) {
         isAnimating = true;
+        incrementMoveCount();
 
-        final int steps = 8;
-        final double stepDurationMs = 100;
-        
-        Timeline timeline = new Timeline();
-
-        boolean crateWasGreen = grid[crateRow][crateCol] instanceof GreenCrate;
+        // Update the grid immediately
         boolean targetIsGoal = isGoal[targetRow][targetCol];
         boolean oldIsGoal = isGoal[crateRow][crateCol];
+        
+        // Remove crate from old position
+        if (oldIsGoal) {
+            grid[crateRow][crateCol] = new Goal();
+        } else {
+            grid[crateRow][crateCol] = new Ground();
+        }
+        
+        // Add crate to new position
+        if (targetIsGoal) {
+            grid[targetRow][targetCol] = new GreenCrate();
+        } else {
+            grid[targetRow][targetCol] = new Crate();
+        }
+        
+        // Animate the movement
+        final int steps = 8;
+        final double stepDurationMs = 50; // Faster than player movement for better feel
+        
+        // Calculate start and end positions in pixels
+        final double startX = crateCol * TILE;
+        final double startY = crateRow * TILE;
+        final double endX = targetCol * TILE;
+        final double endY = targetRow * TILE;
+        
+        // Create a temporary crate for animation
+        Field animatingCrate = targetIsGoal ? new GreenCrate() : new Crate();
+        
+        Timeline timeline = new Timeline();
 
         for (int i = 1; i <= steps; i++) {
             final int step = i;
             KeyFrame kf = new KeyFrame(Duration.millis(step * stepDurationMs), e -> {
-                // Kiste am alten Platz entfernen
-                if (oldIsGoal) {
-                    grid[crateRow][crateCol] = new Goal();
-                } else {
-                    grid[crateRow][crateCol] = new Ground();
-                }
-                // Neue Kiste setzen
-                if (targetIsGoal) {
-                    grid[targetRow][targetCol] = new GreenCrate();
-                } else {
-                    grid[targetRow][targetCol] = new Crate();
-                }
-                // Zeichnen
+                // Calculate smooth movement using easing function
+                double progress = (double)step / steps;
+                double easedProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                
+                double newX = startX + (endX - startX) * easedProgress;
+                double newY = startY + (endY - startY) * easedProgress;
+                
+                // Draw everything
                 drawAll();
-
+                
+                // Draw the animating crate at the current position (cast to int for drawing)
+                animatingCrate.draw(gc, (int)newX, (int)newY);
+                
                 if (step == steps) {
+                    // Final position - redraw to ensure everything is clean
+                    drawAll();
+                    // Now animate the player movement
                     animateMove(dRow, dCol);
-                    // Nach dem Zug prüfen, ob gewonnen
+                    // Check for victory condition
                     if (checkVictory()) {
                         showVictoryMessage();
                     }
@@ -339,6 +444,7 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
             });
             timeline.getKeyFrames().add(kf);
         }
+        
         timeline.play();
     }
 
@@ -349,33 +455,63 @@ private Image crateTargetImg = new Image(Objects.requireNonNull(getClass().getRe
      */
     private void animateMove(int dRow, int dCol) {
         isAnimating = true;
-
+        
+        // Update player's grid position immediately
+        player.setPosition(player.getRow() + dRow, player.getCol() + dCol);
+        
+        // Calculate animation parameters
         final int steps = 8;
-        final double stepDurationMs = 25; // 8 * 25ms = 200ms Gesamtzeit
-        final double startX = player.getCol() * TILE;
-        final double startY = player.getRow() * TILE;
-        final double deltaX = dCol * TILE / steps;
-        final double deltaY = dRow * TILE / steps;
+        final double stepDurationMs = 25; // 8 * 25ms = 200ms total
+        final double startX = player.getCol() * TILE - dCol * TILE; // Start from previous position
+        final double startY = player.getRow() * TILE - dRow * TILE; // Start from previous position
+        final double targetX = player.getCol() * TILE;
+        final double targetY = player.getRow() * TILE;
 
         Timeline timeline = new Timeline();
 
         for (int i = 1; i <= steps; i++) {
             final int step = i;
             KeyFrame kf = new KeyFrame(Duration.millis(step * stepDurationMs), e -> {
-                double newX = startX + deltaX * step;
-                double newY = startY + deltaY * step;
+                // Calculate smooth movement using easing function (quadratic)
+                double progress = (double)step / steps;
+                double easedProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                
+                double newX = startX + (targetX - startX) * easedProgress;
+                double newY = startY + (targetY - startY) * easedProgress;
+                
                 player.setPixelPosition(newX, newY);
                 drawAll();
 
                 if (step == steps) {
-                    // Animation fertig: Tile-Position aktualisieren
-                    player.setPosition(player.getRow() + dRow, player.getCol() + dCol);
+                    // Ensure final position is exact
+                    player.setPixelPosition(targetX, targetY);
+                    drawAll();
                     isAnimating = false;
                 }
             });
             timeline.getKeyFrames().add(kf);
         }
-
+        
+        // Set what happens when the animation is finished
+        timeline.setOnFinished(e -> {
+            // Start cooldown period
+            isAnimating = true;
+            
+            // Clear any existing cooldown
+            if (cooldownTimeline != null) {
+                cooldownTimeline.stop();
+            }
+            
+            // Create new cooldown
+            cooldownTimeline = new Timeline(
+                new KeyFrame(Duration.millis(100), event -> {
+                    isAnimating = false;
+                })
+            );
+            cooldownTimeline.setCycleCount(1);
+            cooldownTimeline.play();
+        });
+        
         timeline.play();
     }
 }
