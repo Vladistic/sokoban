@@ -13,5 +13,6 @@
 - [x] Goals für die Kisten
 - [x] ReflectionLevel
 - [x] GreenCrates
- 
+- [x] Time + Steps
+- [ ] bessere Animation (die zusätzlichen Spielergrafiken waren nicht gegeben)
 
